@@ -3,11 +3,11 @@
 
 in vec3 v_pos;
 in vec3 v_normal;
-//in vec2 v_tex;
+in vec2 v_tex;
 
 out vec3 frag_3Dpos;
 out vec3 vs_normal;
-//out vec2 vs_tex_coord;
+out vec2 vs_tex_coord;
 
 uniform mat4 model;
 uniform mat3 normal;
@@ -19,5 +19,5 @@ void main() {
   gl_Position = projection * view * model * pos;
   frag_3Dpos = vec3(model * pos);
   vs_normal = normalize(normal * v_normal);
-  //vs_tex_coord =
+  vs_tex_coord = v_tex;
 }
