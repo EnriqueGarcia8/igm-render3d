@@ -29,7 +29,8 @@ GLint model_location, normal_location, view_location, proj_location; // Uniforms
 GLint light_position_location, light_ambient_location, light_diffuse_location, light_specular_location; // Uniforms for light properties
 GLint material_ambient_location, material_specular_location, material_shininess_location; // Uniforms for material properties
 GLint view_pos_location; // Uniforms for camera position
-GLuint texture_diffuse = 0; // Diffuse texture
+GLuint texture_diffuse; // Diffuse texture
+GLuint texture_specular; // Specular texture
 
 // Shader names
 const char *vertexFileName = "spinningcube_withlight_vs.glsl";
@@ -39,7 +40,8 @@ const char *fragmentFileName = "spinningcube_withlight_fs.glsl";
 glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
 
 // Lighting
-glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
+//glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
+glm::vec3 light_pos(0.0f, 0.0f, 20.0f);
 glm::vec3 light_ambient(0.2f, 0.2f, 0.2f);
 glm::vec3 light_diffuse(1.0f, 1.0f, 1.0f);
 glm::vec3 light_specular(1.0f, 1.0f, 1.0f);
@@ -227,34 +229,57 @@ int main() {
   glBindVertexArray(0);
 
 
-  // Create texture object
-  glGenTextures(1, &texture_diffuse);
-  glBindTexture(GL_TEXTURE_2D, texture_diffuse);
+  glUseProgram(shader_program);
 
-  // Set the texture wrapping/filtering options (on the currently bound texture object)
+  // Create texture objects
+  glGenTextures(1, &texture_diffuse);
+
+  // First texture in Texture Unit #0
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture_diffuse);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  // Load image for texture
+  glUniform1i(glGetUniformLocation(shader_program, "material.diffuse"), 0);
+
   int width, height, nrChannels;
-  // Before loading the image, we flip it vertically because
-  // Images: 0.0 top of y-axis  OpenGL: 0.0 bottom of y-axis
   stbi_set_flip_vertically_on_load(1);
   unsigned char *data = stbi_load("box_diffuse.jpg", &width, &height, &nrChannels, 0);
-  //unsigned char *data = stbi_load("box_diffuse.png", &width, &height, &nrChannels, 0);
   // Image from http://www.flickr.com/photos/seier/4364156221
   // CC-BY-SA 2.0
+
   if (data) {
-    // Generate texture from image
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
   } else {
-    printf("Failed to load texture\n");
+    printf("Failed to load first texture\n");
   }
+  stbi_image_free(data);
 
-  // Free image once texture is generated
+
+  glGenTextures(1, &texture_specular);
+
+  // Second texture in Texture Unit #1
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, texture_specular);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glUniform1i(glGetUniformLocation(shader_program, "material.specular"), 1);
+
+  data = stbi_load("box_specular.jpg", &width, &height, &nrChannels, 0);
+  // Image from https://es.wikipedia.org/wiki/Archivo:Watchmen_Smiley.svg
+  // CC-BY-SA 3.0
+  if (data) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+    printf("Failed to load second texture\n");
+  }
   stbi_image_free(data);
 
 
@@ -307,7 +332,6 @@ void render(double currentTime) {
 
   glUseProgram(shader_program);
   glBindVertexArray(vao);
-  glBindTexture(GL_TEXTURE_2D, texture_diffuse);
 
   glm::mat4 model_matrix, view_matrix, proj_matrix;
   glm::mat3 normal_matrix;
@@ -348,6 +372,11 @@ void render(double currentTime) {
 
   // Camera pos
   glUniform3fv(view_pos_location, 1, glm::value_ptr(camera_pos));
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture_diffuse);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, texture_specular);
 
   glDrawArrays(GL_TRIANGLES, 0, 36);
 }
