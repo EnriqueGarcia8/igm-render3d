@@ -38,6 +38,8 @@ const char *fragmentFileName = "spinningcube_withlight_fs.glsl";
 
 // Camera
 glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
+glm::vec3 camera_pos_alt(1.0f, 1.0f, 1.0f);
+bool use_alt_camera = true;
 
 // Lighting
 //glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
@@ -345,9 +347,15 @@ void render(double currentTime) {
   glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(model_matrix));
 
   //View matrix
-  view_matrix = glm::lookAt(                 camera_pos,  // pos
+  if (use_alt_camera) {
+    view_matrix = glm::lookAt(             camera_pos_alt,  // pos
+                              glm::vec3(0.0f, 0.0f, 0.0f),  // target
+                              glm::normalize(glm::vec3(-1.0f, 1.0f, -1.0f))); // up
+  } else {
+    view_matrix = glm::lookAt(               camera_pos,  // pos
                             glm::vec3(0.0f, 0.0f, 0.0f),  // target
                             glm::vec3(0.0f, 1.0f, 0.0f)); // up
+  }
   glUniformMatrix4fv(view_location, 1, GL_FALSE, glm::value_ptr(view_matrix));
 
 
@@ -371,7 +379,7 @@ void render(double currentTime) {
   glUniform1f(material_shininess_location, material_shininess);
 
   // Camera pos
-  glUniform3fv(view_pos_location, 1, glm::value_ptr(camera_pos));
+  glUniform3fv(view_pos_location, 1, glm::value_ptr(use_alt_camera ? camera_pos_alt : camera_pos ));
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture_diffuse);
@@ -384,6 +392,8 @@ void render(double currentTime) {
 void processInput(GLFWwindow *window) {
   if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, 1);
+
+  use_alt_camera = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
 }
 
 // Callback function to track window size and update viewport
